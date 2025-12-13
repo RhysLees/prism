@@ -9,6 +9,7 @@ use Prism\Prism\Concerns\ConfiguresClient;
 use Prism\Prism\Concerns\ConfiguresProviders;
 use Prism\Prism\Concerns\HasProviderOptions;
 use Prism\Prism\Exceptions\PrismException;
+use Prism\Prism\ValueObjects\Media\Image;
 
 class PendingRequest
 {
@@ -16,7 +17,7 @@ class PendingRequest
     use ConfiguresProviders;
     use HasProviderOptions;
 
-    /** @var array<string> */
+    /** @var array<string|Image> */
     protected array $inputs = [];
 
     public function fromInput(string $input): self
@@ -49,6 +50,28 @@ class PendingRequest
         }
 
         $this->inputs[] = $contents;
+
+        return $this;
+    }
+
+    public function fromImage(Image $image): self
+    {
+        $this->inputs[] = $image;
+
+        return $this;
+    }
+
+    /**
+     * @param  array<Image>  $images
+     */
+    public function fromImages(array $images): self
+    {
+        foreach ($images as $image) {
+            if (! $image instanceof Image) {
+                throw new PrismException('All items must be instances of Image');
+            }
+            $this->inputs[] = $image;
+        }
 
         return $this;
     }

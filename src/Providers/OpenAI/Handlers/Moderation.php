@@ -10,6 +10,7 @@ use Prism\Prism\Moderation\Request;
 use Prism\Prism\Moderation\Response as ModerationResponse;
 use Prism\Prism\Providers\OpenAI\Concerns\ProcessRateLimits;
 use Prism\Prism\Providers\OpenAI\Concerns\ValidatesResponse;
+use Prism\Prism\ValueObjects\Media\Image;
 use Prism\Prism\ValueObjects\Meta;
 use Prism\Prism\ValueObjects\ModerationResult;
 
@@ -43,11 +44,23 @@ class Moderation
 
     protected function sendRequest(Request $request): Response
     {
+        $inputs = $request->inputs();
+        $hasImages = $this->hasImages($inputs);
+        
+        // If there are any images, we must format as array of objects (always an array, even for single image)
+        // If only text inputs, maintain backward compatibility: single string or array of strings
+        if ($hasImages) {
+            $input = $this->formatInputs($inputs);
+        } else {
+            // All text inputs - maintain backward compatibility
+            $input = count($inputs) === 1 ? $inputs[0] : $inputs;
+        }
+
         /** @var Response $response */
         $response = $this->client->post(
             'moderations',
             array_merge([
-                'input' => count($request->inputs()) === 1 ? $request->inputs()[0] : $request->inputs(),
+                'input' => $input,
             ], array_filter([
                 'model' => $request->model() ?: null,
                 ...($request->providerOptions() ?? []),
@@ -55,5 +68,77 @@ class Moderation
         );
 
         return $response;
+    }
+
+    /**
+     * Check if any inputs are Image objects
+     *
+     * @param  array<string|Image>  $inputs
+     */
+    protected function hasImages(array $inputs): bool
+    {
+        foreach ($inputs as $input) {
+            if ($input instanceof Image) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Format inputs for OpenAI moderation API
+     * Text inputs: { "type": "text", "text": "..." }
+     * Image inputs: { "type": "image_url", "image_url": { "url": "..." } }
+     *
+     * @param  array<string|Image>  $inputs
+     * @return array<array<string, mixed>>
+     */
+    protected function formatInputs(array $inputs): array
+    {
+        $formatted = [];
+
+        foreach ($inputs as $input) {
+            if ($input instanceof Image) {
+                $formatted[] = $this->formatImageInput($input);
+            } else {
+                $formatted[] = [
+                    'type' => 'text',
+                    'text' => $input,
+                ];
+            }
+        }
+
+        return $formatted;
+    }
+
+    /**
+     * Format an Image object for OpenAI moderation API
+     */
+    protected function formatImageInput(Image $image): array
+    {
+        $imageUrl = [];
+
+        if ($image->isFileId()) {
+            // File IDs are not supported in moderation API, convert to base64
+            $imageUrl['url'] = sprintf(
+                'data:%s;base64,%s',
+                $image->mimeType(),
+                $image->base64()
+            );
+        } elseif ($image->isUrl()) {
+            $imageUrl['url'] = $image->url();
+        } else {
+            $imageUrl['url'] = sprintf(
+                'data:%s;base64,%s',
+                $image->mimeType(),
+                $image->base64()
+            );
+        }
+
+        return [
+            'type' => 'image_url',
+            'image_url' => $imageUrl,
+        ];
     }
 }

@@ -53,6 +53,53 @@ foreach ($flaggedResults as $result) {
 }
 ```
 
+## Image Moderation
+
+You can also moderate images! This is useful for checking user-uploaded images for inappropriate content:
+
+```php
+use Prism\Prism\Facades\Prism;
+use Prism\Prism\Enums\Provider;
+use Prism\Prism\ValueObjects\Media\Image;
+
+$response = Prism::moderation()
+    ->using(Provider::OpenAI, 'omni-moderation-latest')
+    ->fromImage(Image::fromUrl('https://example.com/image.png'))
+    ->asModeration();
+
+if ($response->isFlagged()) {
+    // Handle flagged image
+}
+```
+
+### Mixed Text and Image Moderation
+
+You can check both text and images in a single request:
+
+```php
+use Prism\Prism\Facades\Prism;
+use Prism\Prism\Enums\Provider;
+use Prism\Prism\ValueObjects\Media\Image;
+
+$response = Prism::moderation()
+    ->using(Provider::OpenAI, 'omni-moderation-latest')
+    ->fromInput('Check this text')
+    ->fromImage(Image::fromUrl('https://example.com/image.png'))
+    ->fromInput('Another text to check')
+    ->fromImages([
+        Image::fromLocalPath('/path/to/image1.jpg'),
+        Image::fromLocalPath('/path/to/image2.jpg'),
+    ])
+    ->asModeration();
+
+// Each input gets its own result in the response
+foreach ($response->results as $index => $result) {
+    if ($result->flagged) {
+        // Handle flagged content at index $index
+    }
+}
+```
+
 ## Input Methods
 
 You've got several convenient ways to feed text into the moderation checker:
@@ -85,6 +132,52 @@ $response = Prism::moderation()
 
 > [!NOTE]
 > Make sure your file exists and is readable. The moderation checker will throw a helpful `PrismException` if there's any issue accessing the file.
+
+### Image Input
+
+Check images from various sources:
+
+```php
+use Prism\Prism\Facades\Prism;
+use Prism\Prism\Enums\Provider;
+use Prism\Prism\ValueObjects\Media\Image;
+
+// From a URL
+$response = Prism::moderation()
+    ->using(Provider::OpenAI, 'omni-moderation-latest')
+    ->fromImage(Image::fromUrl('https://example.com/image.png'))
+    ->asModeration();
+
+// From a local file
+$response = Prism::moderation()
+    ->using(Provider::OpenAI, 'omni-moderation-latest')
+    ->fromImage(Image::fromLocalPath('/path/to/image.jpg'))
+    ->asModeration();
+
+// From a storage disk
+$response = Prism::moderation()
+    ->using(Provider::OpenAI, 'omni-moderation-latest')
+    ->fromImage(Image::fromStoragePath('/path/to/image.jpg', 'my-disk'))
+    ->asModeration();
+
+// From base64
+$response = Prism::moderation()
+    ->using(Provider::OpenAI, 'omni-moderation-latest')
+    ->fromImage(Image::fromBase64($base64Data, 'image/jpeg'))
+    ->asModeration();
+
+// Multiple images at once
+$response = Prism::moderation()
+    ->using(Provider::OpenAI, 'omni-moderation-latest')
+    ->fromImages([
+        Image::fromUrl('https://example.com/image1.png'),
+        Image::fromLocalPath('/path/to/image2.jpg'),
+    ])
+    ->asModeration();
+```
+
+> [!NOTE]
+> Image moderation requires the `omni-moderation-latest` model (or similar image-capable moderation models). Make sure to specify the correct model when using image moderation.
 
 ## Response Handling
 
@@ -193,8 +286,10 @@ Moderation is useful for:
 
 - **User-Generated Content**: Check comments, posts, or messages before displaying them
 - **Content Filtering**: Filter out inappropriate content in chat applications
+- **Image Moderation**: Verify user-uploaded images meet platform guidelines
 - **Pre-Processing**: Check inputs before sending them to other AI models
 - **Compliance**: Ensure content meets platform guidelines and policies
+- **Mixed Content**: Check both text and images together in a single request
 
 ## Pro Tips
 
@@ -208,4 +303,5 @@ Moderation is useful for:
 
 > [!IMPORTANT]
 > Different providers may have different category names and scoring systems. Always check your provider's documentation for specific details about available categories and score interpretations.
+
 

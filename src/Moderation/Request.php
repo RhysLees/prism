@@ -8,13 +8,14 @@ use Closure;
 use Prism\Prism\Concerns\ChecksSelf;
 use Prism\Prism\Concerns\HasProviderOptions;
 use Prism\Prism\Contracts\PrismRequest;
+use Prism\Prism\ValueObjects\Media\Image;
 
 class Request implements PrismRequest
 {
     use ChecksSelf, HasProviderOptions;
 
     /**
-     * @param  array<string>  $inputs
+     * @param  array<string|Image>  $inputs
      * @param  array<string, mixed>  $clientOptions
      * @param  array{0: array<int, int>|int, 1?: Closure|int, 2?: ?callable, 3?: bool}  $clientRetry
      * @param  array<string, mixed>  $providerOptions
@@ -47,7 +48,7 @@ class Request implements PrismRequest
     }
 
     /**
-     * @return array<string> $inputs
+     * @return array<string|Image> $inputs
      */
     public function inputs(): array
     {
@@ -65,3 +66,4 @@ class Request implements PrismRequest
         return $this->providerKey;
     }
 }
+
