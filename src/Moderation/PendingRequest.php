@@ -53,14 +53,6 @@ class PendingRequest
         return $this;
     }
 
-    /**
-     * @deprecated Use `asModeration` instead.
-     */
-    public function check(): Response
-    {
-        return $this->asModeration();
-    }
-
     public function asModeration(): Response
     {
         if ($this->inputs === []) {
