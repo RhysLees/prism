@@ -66,4 +66,3 @@ class Request implements PrismRequest
         return $this->providerKey;
     }
 }
-

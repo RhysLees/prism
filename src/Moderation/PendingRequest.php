@@ -20,19 +20,28 @@ class PendingRequest
     /** @var array<string|Image> */
     protected array $inputs = [];
 
-    public function fromInput(string $input): self
-    {
-        $this->inputs[] = $input;
-
-        return $this;
-    }
-
     /**
-     * @param  array<string>  $inputs
+     * Add one or more inputs to moderate.
+     * Accepts strings, Image objects, or arrays of either.
+     *
+     * @param  string|Image|array<string|Image>  ...$inputs
      */
-    public function fromArray(array $inputs): self
+    public function withInput(string|Image|array ...$inputs): self
     {
-        $this->inputs = array_merge($this->inputs, $inputs);
+        foreach ($inputs as $input) {
+            if (is_array($input)) {
+                foreach ($input as $item) {
+                    if (! is_string($item) && ! $item instanceof Image) {
+                        throw new PrismException('Array items must be strings or Image instances');
+                    }
+                    $this->inputs[] = $item;
+                }
+            } elseif (is_string($input) || $input instanceof Image) {
+                $this->inputs[] = $input;
+            } else {
+                throw new PrismException('Input must be a string, Image instance, or array of strings/Images');
+            }
+        }
 
         return $this;
     }
@@ -50,28 +59,6 @@ class PendingRequest
         }
 
         $this->inputs[] = $contents;
-
-        return $this;
-    }
-
-    public function fromImage(Image $image): self
-    {
-        $this->inputs[] = $image;
-
-        return $this;
-    }
-
-    /**
-     * @param  array<Image>  $images
-     */
-    public function fromImages(array $images): self
-    {
-        foreach ($images as $image) {
-            if (! $image instanceof Image) {
-                throw new PrismException('All items must be instances of Image');
-            }
-            $this->inputs[] = $image;
-        }
 
         return $this;
     }

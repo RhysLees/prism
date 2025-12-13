@@ -18,7 +18,7 @@ it('can moderate text input', function (): void {
     Http::fake([
         'api.openai.com/v1/moderations' => Http::response([
             'id' => 'modr-123',
-            'model' => 'text-moderation-latest',
+            'model' => 'omni-moderation-latest',
             'results' => [
                 [
                     'flagged' => false,
@@ -38,21 +38,21 @@ it('can moderate text input', function (): void {
     ]);
 
     $response = Prism::moderation()
-        ->using(Provider::OpenAI, 'text-moderation-latest')
-        ->fromInput('Hello, this is a test message')
+        ->using(Provider::OpenAI, 'omni-moderation-latest')
+        ->withInput('Hello, this is a test message')
         ->asModeration();
 
     expect($response->isFlagged())->toBeFalse();
     expect($response->results)->toHaveCount(1);
     expect($response->meta->id)->toBe('modr-123');
-    expect($response->meta->model)->toBe('text-moderation-latest');
+    expect($response->meta->model)->toBe('omni-moderation-latest');
 
     Http::assertSent(function (Request $request): bool {
         $data = $request->data();
 
         return $request->url() === 'https://api.openai.com/v1/moderations'
             && $data['input'] === 'Hello, this is a test message'
-            && $data['model'] === 'text-moderation-latest';
+            && $data['model'] === 'omni-moderation-latest';
     });
 });
 
@@ -60,7 +60,7 @@ it('can moderate multiple text inputs', function (): void {
     Http::fake([
         'api.openai.com/v1/moderations' => Http::response([
             'id' => 'modr-123',
-            'model' => 'text-moderation-latest',
+            'model' => 'omni-moderation-latest',
             'results' => [
                 [
                     'flagged' => false,
@@ -77,9 +77,8 @@ it('can moderate multiple text inputs', function (): void {
     ]);
 
     $response = Prism::moderation()
-        ->using(Provider::OpenAI, 'text-moderation-latest')
-        ->fromInput('First message')
-        ->fromInput('Second message')
+        ->using(Provider::OpenAI, 'omni-moderation-latest')
+        ->withInput('First message', 'Second message')
         ->asModeration();
 
     expect($response->isFlagged())->toBeTrue();
@@ -111,7 +110,7 @@ it('can moderate a single image from URL', function (): void {
 
     $response = Prism::moderation()
         ->using(Provider::OpenAI, 'omni-moderation-latest')
-        ->fromImage(Image::fromUrl('https://example.com/image.png'))
+        ->withInput(Image::fromUrl('https://example.com/image.png'))
         ->asModeration();
 
     expect($response->isFlagged())->toBeFalse();
@@ -152,7 +151,7 @@ it('can moderate multiple images', function (): void {
 
     $response = Prism::moderation()
         ->using(Provider::OpenAI, 'omni-moderation-latest')
-        ->fromImages([
+        ->withInput([
             Image::fromUrl('https://example.com/image1.png'),
             Image::fromUrl('https://example.com/image2.png'),
         ])
@@ -199,9 +198,7 @@ it('can moderate mixed text and image inputs', function (): void {
 
     $response = Prism::moderation()
         ->using(Provider::OpenAI, 'omni-moderation-latest')
-        ->fromInput('This is a text message')
-        ->fromImage(Image::fromUrl('https://example.com/image.png'))
-        ->fromInput('Another text message')
+        ->withInput('This is a text message', Image::fromUrl('https://example.com/image.png'), 'Another text message')
         ->asModeration();
 
     expect($response->isFlagged())->toBeTrue();
@@ -240,7 +237,7 @@ it('can moderate image from local path', function (): void {
 
     $response = Prism::moderation()
         ->using(Provider::OpenAI, 'omni-moderation-latest')
-        ->fromImage(Image::fromLocalPath($imagePath))
+        ->withInput(Image::fromLocalPath($imagePath))
         ->asModeration();
 
     expect($response->isFlagged())->toBeFalse();
@@ -251,7 +248,7 @@ it('can moderate image from local path', function (): void {
         return $request->url() === 'https://api.openai.com/v1/moderations'
             && is_array($data['input'])
             && $data['input'][0]['type'] === 'image_url'
-            && str_starts_with($data['input'][0]['image_url']['url'], 'data:');
+            && str_starts_with((string) $data['input'][0]['image_url']['url'], 'data:');
     });
 });
 
@@ -274,7 +271,7 @@ it('can moderate image from base64', function (): void {
 
     $response = Prism::moderation()
         ->using(Provider::OpenAI, 'omni-moderation-latest')
-        ->fromImage(Image::fromBase64($base64Image, 'image/png'))
+        ->withInput(Image::fromBase64($base64Image, 'image/png'))
         ->asModeration();
 
     expect($response->isFlagged())->toBeFalse();
@@ -285,7 +282,7 @@ it('can moderate image from base64', function (): void {
         return $request->url() === 'https://api.openai.com/v1/moderations'
             && is_array($data['input'])
             && $data['input'][0]['type'] === 'image_url'
-            && str_starts_with($data['input'][0]['image_url']['url'], 'data:image/png;base64,');
+            && str_starts_with((string) $data['input'][0]['image_url']['url'], 'data:image/png;base64,');
     });
 });
 
@@ -293,7 +290,7 @@ it('maintains backward compatibility with text-only single input', function (): 
     Http::fake([
         'api.openai.com/v1/moderations' => Http::response([
             'id' => 'modr-404',
-            'model' => 'text-moderation-latest',
+            'model' => 'omni-moderation-latest',
             'results' => [
                 [
                     'flagged' => false,
@@ -305,8 +302,8 @@ it('maintains backward compatibility with text-only single input', function (): 
     ]);
 
     $response = Prism::moderation()
-        ->using(Provider::OpenAI, 'text-moderation-latest')
-        ->fromInput('Simple text input')
+        ->using(Provider::OpenAI, 'omni-moderation-latest')
+        ->withInput('Simple text input')
         ->asModeration();
 
     expect($response->isFlagged())->toBeFalse();
@@ -338,7 +335,7 @@ it('sends images as array even when single image', function (): void {
 
     $response = Prism::moderation()
         ->using(Provider::OpenAI, 'omni-moderation-latest')
-        ->fromImage(Image::fromUrl('https://example.com/single-image.png'))
+        ->withInput(Image::fromUrl('https://example.com/single-image.png'))
         ->asModeration();
 
     expect($response->isFlagged())->toBeFalse();
@@ -354,14 +351,72 @@ it('sends images as array even when single image', function (): void {
     });
 });
 
-it('throws exception when fromImages receives non-Image objects', function (): void {
+it('throws exception when withInput receives invalid types', function (): void {
     expect(function (): void {
         Prism::moderation()
             ->using(Provider::OpenAI, 'omni-moderation-latest')
-            ->fromImages([
+            ->withInput([
                 Image::fromUrl('https://example.com/image.png'),
-                'not-an-image', // This should cause an exception
+                'not-an-image', // This should be fine - arrays can contain strings and Images
             ]);
-    })->toThrow(\Prism\Prism\Exceptions\PrismException::class, 'All items must be instances of Image');
+    })->not->toThrow();
+
+    // Test with actually invalid type in array
+    expect(function (): void {
+        $invalidInput = [new \stdClass]; // Invalid type
+        Prism::moderation()
+            ->using(Provider::OpenAI, 'omni-moderation-latest')
+            ->withInput($invalidInput);
+    })->toThrow(\Prism\Prism\Exceptions\PrismException::class, 'Array items must be strings or Image instances');
 });
 
+it('can use withInput with mixed types in variadic arguments', function (): void {
+    Http::fake([
+        'api.openai.com/v1/moderations' => Http::response([
+            'id' => 'modr-606',
+            'model' => 'omni-moderation-latest',
+            'results' => [
+                ['flagged' => false, 'categories' => [], 'category_scores' => []],
+                ['flagged' => false, 'categories' => [], 'category_scores' => []],
+                ['flagged' => false, 'categories' => [], 'category_scores' => []],
+            ],
+        ], 200),
+    ]);
+
+    $response = Prism::moderation()
+        ->using(Provider::OpenAI, 'omni-moderation-latest')
+        ->withInput('Text 1', Image::fromUrl('https://example.com/image.png'), 'Text 2')
+        ->asModeration();
+
+    expect($response->results)->toHaveCount(3);
+
+    Http::assertSent(function (Request $request): bool {
+        $data = $request->data();
+
+        return is_array($data['input'])
+            && count($data['input']) === 3
+            && $data['input'][0]['type'] === 'text'
+            && $data['input'][1]['type'] === 'image_url'
+            && $data['input'][2]['type'] === 'text';
+    });
+});
+
+it('can use withInput with arrays', function (): void {
+    Http::fake([
+        'api.openai.com/v1/moderations' => Http::response([
+            'id' => 'modr-707',
+            'model' => 'omni-moderation-latest',
+            'results' => [
+                ['flagged' => false, 'categories' => [], 'category_scores' => []],
+                ['flagged' => false, 'categories' => [], 'category_scores' => []],
+            ],
+        ], 200),
+    ]);
+
+    $response = Prism::moderation()
+        ->using(Provider::OpenAI, 'omni-moderation-latest')
+        ->withInput(['Text 1', 'Text 2'])
+        ->asModeration();
+
+    expect($response->results)->toHaveCount(2);
+});

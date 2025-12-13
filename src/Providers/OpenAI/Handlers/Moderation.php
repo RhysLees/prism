@@ -46,13 +46,9 @@ class Moderation
     {
         $inputs = $request->inputs();
         $hasImages = $this->hasImages($inputs);
-        
-        // If there are any images, we must format as array of objects (always an array, even for single image)
-        // If only text inputs, maintain backward compatibility: single string or array of strings
         if ($hasImages) {
             $input = $this->formatInputs($inputs);
         } else {
-            // All text inputs - maintain backward compatibility
             $input = count($inputs) === 1 ? $inputs[0] : $inputs;
         }
 

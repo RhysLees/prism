@@ -12,7 +12,7 @@ use Prism\Prism\Enums\Provider;
 
 $response = Prism::moderation()
     ->using(Provider::OpenAI)
-    ->fromInput('Your text to check goes here')
+    ->withInput('Your text to check goes here')
     ->asModeration();
 
 // Check if any content was flagged
@@ -24,7 +24,7 @@ if ($response->isFlagged()) {
 
 ## Checking Multiple Inputs
 
-You can check multiple text inputs at once:
+You can check multiple text inputs at once using the unified `withInput()` method:
 
 ```php
 use Prism\Prism\Facades\Prism;
@@ -32,15 +32,14 @@ use Prism\Prism\Enums\Provider;
 
 $response = Prism::moderation()
     ->using(Provider::OpenAI)
-    // First input
-    ->fromInput('First text to check')
-    // Second input
-    ->fromInput('Second text to check')
-    // Multiple inputs at once
-    ->fromArray([
-        'Third text',
-        'Fourth text'
-    ])
+    // Multiple inputs as variadic arguments
+    ->withInput('First text to check', 'Second text to check', 'Third text')
+    ->asModeration();
+
+// Or pass an array
+$response = Prism::moderation()
+    ->using(Provider::OpenAI)
+    ->withInput(['First text', 'Second text', 'Third text'])
     ->asModeration();
 
 // Get all flagged results
@@ -64,7 +63,7 @@ use Prism\Prism\ValueObjects\Media\Image;
 
 $response = Prism::moderation()
     ->using(Provider::OpenAI, 'omni-moderation-latest')
-    ->fromImage(Image::fromUrl('https://example.com/image.png'))
+    ->withInput(Image::fromUrl('https://example.com/image.png'))
     ->asModeration();
 
 if ($response->isFlagged()) {
@@ -74,20 +73,31 @@ if ($response->isFlagged()) {
 
 ### Mixed Text and Image Moderation
 
-You can check both text and images in a single request:
+You can check both text and images in a single request using the unified `withInput()` method:
 
 ```php
 use Prism\Prism\Facades\Prism;
 use Prism\Prism\Enums\Provider;
 use Prism\Prism\ValueObjects\Media\Image;
 
+// Mix text and images as variadic arguments
 $response = Prism::moderation()
     ->using(Provider::OpenAI, 'omni-moderation-latest')
-    ->fromInput('Check this text')
-    ->fromImage(Image::fromUrl('https://example.com/image.png'))
-    ->fromInput('Another text to check')
-    ->fromImages([
-        Image::fromLocalPath('/path/to/image1.jpg'),
+    ->withInput(
+        'Check this text',
+        Image::fromUrl('https://example.com/image.png'),
+        'Another text to check',
+        Image::fromLocalPath('/path/to/image1.jpg')
+    )
+    ->asModeration();
+
+// Or use arrays
+$response = Prism::moderation()
+    ->using(Provider::OpenAI, 'omni-moderation-latest')
+    ->withInput([
+        'Text 1',
+        Image::fromUrl('https://example.com/image.png'),
+        'Text 2',
         Image::fromLocalPath('/path/to/image2.jpg'),
     ])
     ->asModeration();
@@ -102,23 +112,59 @@ foreach ($response->results as $index => $result) {
 
 ## Input Methods
 
-You've got several convenient ways to feed text into the moderation checker:
+The `withInput()` method is the unified way to add any type of input to moderation. It accepts strings, Image objects, or arrays of either as variadic arguments.
 
-### Direct Text Input
+### Using withInput()
+
+The `withInput()` method is flexible and accepts multiple input types:
 
 ```php
 use Prism\Prism\Facades\Prism;
 use Prism\Prism\Enums\Provider;
+use Prism\Prism\ValueObjects\Media\Image;
 
+// Single text input
 $response = Prism::moderation()
     ->using(Provider::OpenAI)
-    ->fromInput('Check this text for moderation')
+    ->withInput('Check this text for moderation')
+    ->asModeration();
+
+// Multiple text inputs
+$response = Prism::moderation()
+    ->using(Provider::OpenAI)
+    ->withInput('Text 1', 'Text 2', 'Text 3')
+    ->asModeration();
+
+// Single image
+$response = Prism::moderation()
+    ->using(Provider::OpenAI, 'omni-moderation-latest')
+    ->withInput(Image::fromUrl('https://example.com/image.png'))
+    ->asModeration();
+
+// Multiple images
+$response = Prism::moderation()
+    ->using(Provider::OpenAI, 'omni-moderation-latest')
+    ->withInput([
+        Image::fromUrl('https://example.com/image1.png'),
+        Image::fromLocalPath('/path/to/image2.jpg'),
+    ])
+    ->asModeration();
+
+// Mixed text and images
+$response = Prism::moderation()
+    ->using(Provider::OpenAI, 'omni-moderation-latest')
+    ->withInput(
+        'Text to check',
+        Image::fromUrl('https://example.com/image.png'),
+        'More text',
+        Image::fromBase64($base64Data, 'image/jpeg')
+    )
     ->asModeration();
 ```
 
 ### From File
 
-Need to check a larger document? No problem:
+Need to check a larger document? Use the `fromFile()` convenience method:
 
 ```php
 use Prism\Prism\Facades\Prism;
@@ -133,47 +179,24 @@ $response = Prism::moderation()
 > [!NOTE]
 > Make sure your file exists and is readable. The moderation checker will throw a helpful `PrismException` if there's any issue accessing the file.
 
-### Image Input
+### Image Sources
 
-Check images from various sources:
+Images can be created from various sources:
 
 ```php
-use Prism\Prism\Facades\Prism;
-use Prism\Prism\Enums\Provider;
 use Prism\Prism\ValueObjects\Media\Image;
 
 // From a URL
-$response = Prism::moderation()
-    ->using(Provider::OpenAI, 'omni-moderation-latest')
-    ->fromImage(Image::fromUrl('https://example.com/image.png'))
-    ->asModeration();
+Image::fromUrl('https://example.com/image.png')
 
 // From a local file
-$response = Prism::moderation()
-    ->using(Provider::OpenAI, 'omni-moderation-latest')
-    ->fromImage(Image::fromLocalPath('/path/to/image.jpg'))
-    ->asModeration();
+Image::fromLocalPath('/path/to/image.jpg')
 
 // From a storage disk
-$response = Prism::moderation()
-    ->using(Provider::OpenAI, 'omni-moderation-latest')
-    ->fromImage(Image::fromStoragePath('/path/to/image.jpg', 'my-disk'))
-    ->asModeration();
+Image::fromStoragePath('/path/to/image.jpg', 'my-disk')
 
 // From base64
-$response = Prism::moderation()
-    ->using(Provider::OpenAI, 'omni-moderation-latest')
-    ->fromImage(Image::fromBase64($base64Data, 'image/jpeg'))
-    ->asModeration();
-
-// Multiple images at once
-$response = Prism::moderation()
-    ->using(Provider::OpenAI, 'omni-moderation-latest')
-    ->fromImages([
-        Image::fromUrl('https://example.com/image1.png'),
-        Image::fromLocalPath('/path/to/image2.jpg'),
-    ])
-    ->asModeration();
+Image::fromBase64($base64Data, 'image/jpeg')
 ```
 
 > [!NOTE]
@@ -245,8 +268,8 @@ use Prism\Prism\Facades\Prism;
 use Prism\Prism\Enums\Provider;
 
 $response = Prism::moderation()
-    ->using(Provider::OpenAI, 'text-moderation-latest')
-    ->fromInput('Your text here')
+    ->using(Provider::OpenAI, 'omni-moderation-latest')
+    ->withInput('Your text here')
     ->withClientOptions(['timeout' => 30]) // Adjust request timeout
     ->withClientRetry(3, 100) // Add automatic retries
     ->withProviderOptions([
@@ -267,7 +290,7 @@ use Prism\Prism\Exceptions\PrismException;
 try {
     $response = Prism::moderation()
         ->using(Provider::OpenAI)
-        ->fromInput('Your text here')
+        ->withInput('Your text here')
         ->asModeration();
         
     if ($response->isFlagged()) {
