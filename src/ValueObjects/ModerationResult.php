@@ -11,7 +11,6 @@ readonly class ModerationResult
      * @param  array<string, float>  $categoryScores
      */
     public function __construct(
-        public string $id,
         public bool $flagged,
         public array $categories,
         public array $categoryScores,
@@ -23,7 +22,6 @@ readonly class ModerationResult
     public static function fromArray(array $data): self
     {
         return new self(
-            id: data_get($data, 'id', ''),
             flagged: (bool) data_get($data, 'flagged', false),
             categories: data_get($data, 'categories', []) ?: [],
             categoryScores: data_get($data, 'category_scores', []) ?: [],
