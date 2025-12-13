@@ -7,13 +7,11 @@ use Prism\Prism\ValueObjects\ModerationResult;
 describe('isFlagged', function (): void {
     it('returns true when at least one result is flagged', function (): void {
         $result1 = new ModerationResult(
-            id: '',
             flagged: false,
             categories: [],
             categoryScores: []
         );
         $result2 = new ModerationResult(
-            id: '',
             flagged: true,
             categories: ['hate' => true],
             categoryScores: ['hate' => 0.9]
@@ -26,13 +24,11 @@ describe('isFlagged', function (): void {
 
     it('returns false when no results are flagged', function (): void {
         $result1 = new ModerationResult(
-            id: '',
             flagged: false,
             categories: [],
             categoryScores: []
         );
         $result2 = new ModerationResult(
-            id: '',
             flagged: false,
             categories: [],
             categoryScores: []
@@ -69,26 +65,22 @@ describe('isFlagged', function (): void {
         $response = new Response(results: [$result], meta: $meta);
 
         expect($response->isFlagged())->toBeTrue();
-        expect($result->id)->toBe(''); // Results from API don't have an id field
     });
 });
 
 describe('firstFlagged', function (): void {
     it('returns the first flagged result', function (): void {
         $result1 = new ModerationResult(
-            id: '',
             flagged: false,
             categories: [],
             categoryScores: []
         );
         $result2 = new ModerationResult(
-            id: '',
             flagged: true,
             categories: ['hate' => true],
             categoryScores: ['hate' => 0.9]
         );
         $result3 = new ModerationResult(
-            id: '',
             flagged: true,
             categories: ['violence' => true],
             categoryScores: ['violence' => 0.8]
@@ -105,13 +97,11 @@ describe('firstFlagged', function (): void {
 
     it('returns null when no results are flagged', function (): void {
         $result1 = new ModerationResult(
-            id: '',
             flagged: false,
             categories: [],
             categoryScores: []
         );
         $result2 = new ModerationResult(
-            id: '',
             flagged: false,
             categories: [],
             categoryScores: []
@@ -133,25 +123,21 @@ describe('firstFlagged', function (): void {
 describe('flagged', function (): void {
     it('returns all flagged results', function (): void {
         $result1 = new ModerationResult(
-            id: '',
             flagged: false,
             categories: [],
             categoryScores: []
         );
         $result2 = new ModerationResult(
-            id: '',
             flagged: true,
             categories: ['hate' => true],
             categoryScores: ['hate' => 0.9]
         );
         $result3 = new ModerationResult(
-            id: '',
             flagged: true,
             categories: ['violence' => true],
             categoryScores: ['violence' => 0.8]
         );
         $result4 = new ModerationResult(
-            id: '',
             flagged: false,
             categories: [],
             categoryScores: []
@@ -170,13 +156,11 @@ describe('flagged', function (): void {
 
     it('returns empty array when no results are flagged', function (): void {
         $result1 = new ModerationResult(
-            id: '',
             flagged: false,
             categories: [],
             categoryScores: []
         );
         $result2 = new ModerationResult(
-            id: '',
             flagged: false,
             categories: [],
             categoryScores: []
@@ -202,13 +186,11 @@ describe('flagged', function (): void {
 
     it('returns all results when all are flagged', function (): void {
         $result1 = new ModerationResult(
-            id: '',
             flagged: true,
             categories: ['hate' => true],
             categoryScores: ['hate' => 0.9]
         );
         $result2 = new ModerationResult(
-            id: '',
             flagged: true,
             categories: ['violence' => true],
             categoryScores: ['violence' => 0.8]
